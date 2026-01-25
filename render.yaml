@@ -1,0 +1,41 @@
+services:
+  # Backend Service
+  - type: web
+    name: smart-city-backend
+    runtime: node
+    region: singapore
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smart-city-db
+          property: connectionString
+      - key: MONGO_URI
+        sync: false # You must set this manually in Render Dashboard
+    autoDeploy: true
+
+  # Frontend Service
+  - type: static
+    name: smart-city-frontend
+    region: singapore
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: smart-city-backend
+          property: url
+    autoDeploy: true
+
+databases:
+  - name: smart-city-db
+    databaseName: smartcitygis
+    user: smart_city_user
+    region: singapore
+    plan: free
