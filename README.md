@@ -1,123 +1,76 @@
-# Smart City Incident & Infrastructure Mapping System
+# Smart City GIS / Incident Mapping System
 
-A full-stack GIS web application utilizing a hybrid database architecture (MongoDB + Oracle Spatial) to manage and visualize city incidents.
+This project is a full-stack MERN + PostgreSQL/PostGIS application designed for tracking and visualizing smart city incidents. It handles spatial data efficiently using PostGIS and provides a reactive frontend with Leaflet.
 
-## 🏗️ System Architecture
+## 📦 Tech Stack
+- **Frontend**: React, Vite, Tailwind CSS, Leaflet, React Router
+- **Backend**: Node.js, Express.js
+- **Database**: MongoDB Atlas (User/Auth), PostgreSQL + PostGIS (Spatial Data)
+- **Deployment**: Render.com
 
-```mermaid
-graph TD
-    User((User)) -->|Browser| Frontend[React + Vite Frontend]
-    Frontend -->|REST API| Backend[Node.js + Express Backend]
-    Backend -->|Metadata/Users| Mongo[(MongoDB NoSQL)]
-    Backend -->|Spatial Data| Oracle[(Oracle Spatial DB)]
-    
-    subgraph GIS_Services
-    Frontend -->|Tiles| OSM[OpenStreetMap]
-    end
-```
+## 🚀 Deployment Guide
 
-## 🚀 Data Flow
-1. **Reporting**: User submits form -> Backend saves metadata to Mongo -> Backend saves Geometry to Oracle.
-2. **Visualization**: Frontend requests map data -> Backend queries Oracle Spatial (efficient spatial filter) -> Returns GeoJSON.
-3. **Analysis**: "Nearby" search uses Oracle `SDO_WITHIN_DISTANCE`.
+### Phase 1: Pre-requisites
+1.  **MongoDB Atlas**: Create a free M0 cluster and get your connection string (`mongodb+srv://...`). Whitelist IP `0.0.0.0/0`.
+2.  **GitHub**: Push this repository to a new public/private GitHub repo.
 
-## 🛠️ Tech Stack
-- **Frontend**: React 18, Vite, Tailwind CSS, Leaflet (React-Leaflet).
-- **Backend**: Node.js, Express.js, JWT Auth.
-- **Database 1**: MongoDB (Mongoose) - User Profiles, Incident Details.
-- **Database 2**: Oracle Database (node-oracledb) - Spatial Indexing & Querying (`SDO_GEOMETRY`).
+### Phase 2: Render Deployment (The Easy Way)
+1.  Log in to [Render.com](https://render.com).
+2.  Go to "Blueprints" and click "New Blueprint Instance".
+3.  Connect your GitHub repository.
+4.  Render will detect `render.yaml`.
+5.  **IMP:** You will be prompted to enter `MONGODB_URI`. Paste your Atlas connection string.
+6.  Click "Apply". Render will automatically:
+    - Create a PostgreSQL database (`gis-postgres`).
+    - Deploy the Backend Service (`gis-backend`).
+    - Deploy the Frontend Service (`gis-frontend`).
 
-## 📂 Project Structure
-```
-/
-├── backend/
-│   ├── config/         # DB Connections
-│   ├── controllers/    # Request Handlers
-│   ├── models/         # Mongoose Schemas
-│   ├── routes/         # API Routes
-│   ├── services/       # Oracle/Spatial Logic
-│   ├── sql/            # Oracle Setup Scripts
-│   ├── .env.example    # Env Vars
-│   └── server.js       # Entry Point
-├── frontend/
-│   ├── src/
-│   │   ├── components/ # Map, Navbar
-│   │   ├── pages/      # Dashboard, Login, Report
-│   │   ├── services/   # API Client
-│   └── vite.config.js
-└── README.md
-```
+### Phase 3: Post-Deployment Setup
+1.  **Initialize PostGIS**:
+    - Go to your Dashboard -> `gis-postgres` -> "Connect" -> "External Connection".
+    - Copy the "PSQL Command".
+    - Run it in your local terminal (you need Postgres installed) or use a GUI like PgAdmin.
+    - Run the contents of `backend/db/init.sql` to enable PostGIS and create tables.
+    ```sql
+    CREATE EXTENSION IF NOT EXISTS postgis;
+    -- run the rest of init.sql...
+    ```
+2.  **Verify Frontend**:
+    - Visit your frontend URL (e.g., `https://gis-frontend.onrender.com`).
+    - You should see the map.
+    - Try clicking to add an incident.
 
-## ⚙️ Setup Instructions
+## 🛠 Testing Commands
 
-### Prerequisites
-- Node.js (v14+)
-- MongoDB (Running locally or Atlas)
-- Oracle Database (18c/21c XE recommended) with Spatial features enabled.
-
-### 1. Database Setup
-**MongoDB**: Ensure it's running on port 27017 (or update .env).
-
-**Oracle Spatial**:
-1. Connect to your Oracle DB as a user with quota.
-2. Run the script: `backend/sql/init_spatial.sql`
-   - This creates the `INCIDENTS_SPATIAL` table.
-   - Updates `USER_SDO_GEOM_METADATA`.
-   - Creates the Spatial Index.
-
-### 2. Backend Setup
+### Backend Local Test
 ```bash
 cd backend
 npm install
-# Edit .env to match your Oracle Credentials
-# npm start
-```
-
-### 3. Frontend Setup
-```bash
-cd frontend
-npm install
+# Create .env file with local creds
 npm run dev
 ```
 
-### 4. Running the App
-- Open `http://localhost:5173`.
-- Register a new account.
-- Go to "Report Incident", click on map, fill details.
-- Go home to see the marker on the map.
-
-## 📖 API Documentation
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/users` | Register User | No |
-| POST | `/api/users/login` | Login User | No |
-| POST | `/api/incidents` | Report Incident | Yes |
-| GET | `/api/incidents/map` | Get GeoJSON | No |
-| GET | `/api/incidents/nearby` | Find Nearby (lat, lng, radius) | No |
-
-## 📊 Database Schemas
-
-### MongoDB: `Incident`
-```json
-{
-  "title": String,
-  "description": String,
-  "category": String,
-  "location": { "latitude": Number, "longitude": Number },
-  "postedBy": Link(User),
-  "createdAt": Date
-}
+### Frontend Local Test
+```bash
+cd frontend
+npm install
+# Create .env.local file: VITE_API_URL=http://localhost:5000
+npm run dev
 ```
 
-### Oracle: `INCIDENTS_SPATIAL`
-| Column | Type | Description |
-|--------|------|-------------|
-| ID | NUMBER | PK |
-| MONGO_ID | VARCHAR2 | Link to Mongo Document |
-| LOCATION | SDO_GEOMETRY | Spatial Point (SRID 4326) |
+## ❓ Troubleshooting
 
----
-*Created for MSc CS Project / Advanced GIS Systems*
-# smart-city-gis
-# smart-city-gis
+### Backend 502 Bad Gateway
+- Check logs in Render Dashboard.
+- Ensure `start` script is `node server.js`.
+- Ensure `PORT` is being used (`process.env.PORT`).
+
+### Frontend 404 on Refresh
+- This is a Single Page App (SPA). Ensure `_redirects` file exists in `frontend/public/` with content `/*  /index.html  200`.
+
+### Database Connection Failure
+- **MongoDB**: Check Network Access IP whitelist in Atlas (Allow All).
+- **Postgres**: Ensure `DATABASE_URL` is correct. Render handles this strictly internally if using Blueprint.
+
+### "PostGIS extension not found"
+- You MUST run `CREATE EXTENSION postgis;` in your database. This is not automatic on the free tier unless you run the SQL script manually once.

@@ -1,38 +1,33 @@
 const mongoose = require('mongoose');
 const { Pool } = require('pg');
 
-// MongoDB Connection
-const connectMongoDB = async () => {
+// Postgres Configuration
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Database Connection Logic
+const connectDB = async () => {
+    // MongoDB Connection
     try {
-        const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/smartcitygis';
-        await mongoose.connect(mongoURI);
-        console.log('✅ MongoDB Connected');
-    } catch (err) {
-        console.error('❌ MongoDB Connection Error:', err);
-        throw err;
+        const conn = await mongoose.connect(process.env.MONGODB_URI);
+        console.log(`MongoDB Connected: ${conn.connection.host}`);
+    } catch (error) {
+        console.error(`Error connecting to MongoDB: ${error.message}`);
+        // We don't exit process here strictly so Postgres can still attempt connection, but usually fatal.
+        // In strict production, might want to process.exit(1);
+    }
+
+    // PostgreSQL Connection Check
+    try {
+        const client = await pool.connect();
+        const res = await client.query('SELECT NOW()');
+        console.log(`PostgreSQL Connected: ${res.rows[0].now}`);
+        client.release();
+    } catch (error) {
+        console.error(`Error connecting to PostgreSQL: ${error.message}`);
     }
 };
 
-// PostgreSQL Configuration
-const poolConfig = process.env.DATABASE_URL
-    ? {
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        }
-    }
-    : {
-        user: process.env.POSTGRES_USER || 'postgres',
-        host: process.env.POSTGRES_HOST || 'localhost',
-        database: process.env.POSTGRES_DB || 'smartcitygis',
-        password: process.env.POSTGRES_PASSWORD || 'postgres',
-        port: process.env.POSTGRES_PORT || 5432,
-    };
-
-const pool = new Pool(poolConfig);
-
-const getPgConnection = () => {
-    return pool;
-};
-
-module.exports = { connectMongoDB, getPgConnection };
+module.exports = { connectDB, pool };

@@ -1,41 +1,50 @@
 services:
-  # Backend Service
+  # Backend Node Service
   - type: web
-    name: smart-city-backend
-    runtime: node
-    region: singapore
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: npm start
+    name: gis-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
     envVars:
-      - key: PORT
-        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # User must provide this in dashboard
       - key: DATABASE_URL
         fromDatabase:
-          name: smart-city-db
+          name: gis-postgres
           property: connectionString
-      - key: MONGO_URI
-        sync: false # You must set this manually in Render Dashboard
-    autoDeploy: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://gis-frontend.onrender.com # Update this after frontend URL is known if different, or rely on internal network if private
+    healthCheckPath: /health
 
-  # Frontend Service
-  - type: static
-    name: smart-city-frontend
-    region: singapore
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    publishDir: dist
+  # Frontend Static Site
+  - type: web
+    name: gis-frontend
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_URL
         fromService:
           type: web
-          name: smart-city-backend
+          name: gis-backend
           property: url
-    autoDeploy: true
 
 databases:
-  - name: smart-city-db
-    databaseName: smartcitygis
-    user: smart_city_user
-    region: singapore
+  # PostGIS Database
+  - name: gis-postgres
+    databaseName: gis_spatial
+    user: gis_user
     plan: free
+    ipAllowList: [] # Allow all internal connections
