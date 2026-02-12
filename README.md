@@ -309,7 +309,7 @@ This project is licensed under the MIT License.
 
 For issues and questions:
 - Open an issue on GitHub
-- Contact: [Your Email]
+- Contact: shantanuharkulkar125@gmail.com
 
 ---
 
