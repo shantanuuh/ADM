@@ -1,0 +1,15 @@
+{
+    "name": "public-incident-management-system",
+    "version": "1.0.0",
+    "description": "Unified deployment for ADM",
+    "scripts": {
+        "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
+        "start": "cd backend && node server.js"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}

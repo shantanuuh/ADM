@@ -1,50 +1,25 @@
 services:
-  # Backend Node Service
+  # Unified Full-Stack Service
   - type: web
-    name: gis-backend
+    name: public-ims
     env: node
     region: oregon
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    buildCommand: npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: MONGODB_URI
-        sync: false # User must provide this in dashboard
       - key: DATABASE_URL
-        fromDatabase:
-          name: gis-postgres
-          property: connectionString
+        sync: false # User must provide Oracle DB details
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_CONNECT_STRING
+        sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: CORS_ORIGIN
-        value: https://gis-frontend.onrender.com # Update this after frontend URL is known if different, or rely on internal network if private
-    healthCheckPath: /health
+    healthCheckPath: /api/incidents # Check API health, or root /
 
-  # Frontend Static Site
-  - type: web
-    name: gis-frontend
-    env: static
-    region: oregon
-    plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: gis-backend
-          property: url
-
-databases:
-  # PostGIS Database
-  - name: gis-postgres
-    databaseName: gis_spatial
-    user: gis_user
-    plan: free
-    ipAllowList: [] # Allow all internal connections
+# Removed separate frontend service as backend now serves it.
